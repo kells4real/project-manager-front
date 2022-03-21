@@ -7,7 +7,7 @@
 
         <label class="file-select2" style="max-width: 100%">
           <div class="select-button">
-            <h3 v-if="selectedFile">Selected File(.zip): {{ selectedFile.name.substring(0, 30) + '...' }}</h3>
+            <h3 v-if="selectedFile">Selected File (.zip): {{ selectedFile.name.substring(0, 30) + '...' }}</h3>
             <h3 v-else>Select a Zip File</h3>
           </div>
           <input
@@ -28,7 +28,7 @@
             class="ma-2 white--text"
             @click="$refs.file.click()"
           >
-            Select File
+            Select A Zipped File
             <v-icon right dark> mdi-file </v-icon>
           </v-btn>
         </div>
@@ -48,6 +48,7 @@
 
     <v-card-text>
       <v-container fluid>
+
     <p>SELLECT FILE EXTENTIONS YOU WOULD LIKE TO EXAMINE</p>
 
         <v-row>
@@ -137,9 +138,6 @@
     </v-card-text>
   </v-card>
 
-
-        <br />
-
         <div style="text-align: center">
           <v-btn
             :loading="isLoading"
@@ -152,10 +150,17 @@
             <v-icon right dark> mdi-cloud-upload </v-icon>
           </v-btn>
         </div>
+        
         <div v-if="done" style="text-align: center">
-          <h2>You have ({{ count }}) lines of code in this project</h2>
+          <h2 style="font-style: italics">You have ({{ count }}) lines of code in this project</h2>
         </div>
       </v-col>
+      <v-snackbar
+      v-model="snackBar"
+      :timeout="4000"
+    >
+      {{ text }}
+    </v-snackbar>
     </v-row>
   </v-container>
 </template>
@@ -173,14 +178,17 @@ const axios = require('../axios')
     uploadProgress: 0,
     done: false,
     selected: [],
-    extString: ""
+    extString: "",
+    snackBar: false,
+    text: ""
     }),
 
     methods: {
       onFileSelected(e) {
       this.selectedFile = e.target.files[0];
-      if (this.selectedFile.size > 10485760) {
-          console.log("File too big")
+      if (this.selectedFile.size > 50485760) {
+          this.text = "File can't be larger than 50MB"
+          this.snackBar = true
         this.selectedFile = null;
       }
     },
@@ -226,7 +234,9 @@ const axios = require('../axios')
         } else {
           this.done = false
           this.isLoading = false;
-          this.selectedFile = null
+          this.text = "Make sure you've selected a file and at least one extention to lookup!"
+          this.snackBar = true;
+          // this.selectedFile = null
             this.extString = ""
 
         }
