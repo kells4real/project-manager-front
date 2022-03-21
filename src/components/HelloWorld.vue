@@ -200,6 +200,7 @@ const axios = require('../axios')
           for(i of this.selected){
             this.extString += i+","
           }
+          this.isLoading = true
           this.done = false
           formData = new FormData();
           console.log(this.extString)
