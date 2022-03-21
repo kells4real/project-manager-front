@@ -203,7 +203,7 @@ const axios = require('../axios')
           this.isLoading = true
           this.done = false
           formData = new FormData();
-          console.log(this.extString)
+
           // formData.append("thumbnail", this.selectedImage, this.selectedImage.name);
           formData.append("projectName", "project");
           formData.append("file", this.selectedFile, this.selectedFile.name);
@@ -220,7 +220,6 @@ const axios = require('../axios')
 
             this.count = response.data.codeLines
             this.done = true;
-            console.log(response.data)
             this.isLoading = false;
             this.selectedFile = null
             this.extString = ""
