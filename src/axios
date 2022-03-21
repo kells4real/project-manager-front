@@ -1,0 +1,9 @@
+var axios = require('axios');
+
+var axiosInstance = axios.create({
+//   baseURL: 'https://api.divineword.xyz'
+  baseURL: 'http://localhost:8000'
+  /* other custom settings */
+});
+
+module.exports = axiosInstance;
