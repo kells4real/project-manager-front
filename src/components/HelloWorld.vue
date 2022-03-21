@@ -49,7 +49,7 @@
     <v-card-text>
       <v-container fluid>
 
-    <p>SELLECT FILE EXTENTIONS YOU WOULD LIKE TO EXAMINE</p>
+    <p>SELLECT FILE TYPE(S) YOU WOULD LIKE TO TRACK</p>
 
         <v-row>
           <v-col
