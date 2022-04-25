@@ -20,5 +20,8 @@ npm run build
 npm run lint
 ```
 
+### Demo
+https://edufyproject.netlify.app/
+
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
