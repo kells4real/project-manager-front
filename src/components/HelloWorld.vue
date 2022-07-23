@@ -8,7 +8,7 @@
         <label class="file-select2" style="max-width: 100%">
           <div class="select-button">
             <h3 v-if="selectedFile">Selected File (.zip): {{ selectedFile.name.substring(0, 30) + '...' }}</h3>
-            <h3 v-else>Select a Zip File</h3>
+            <h3 v-else>Select Project Zipped File</h3>
           </div>
           <input
           ref="file" 
@@ -49,7 +49,7 @@
     <v-card-text>
       <v-container fluid>
 
-    <p>SELLECT FILE TYPE(S) YOU WOULD LIKE TO TRACK</p>
+    <p style="font-weight: bold">SELECT THE FILE TYPE(S) YOU WOULD LIKE TO TRACK</p>
 
         <v-row>
           <v-col
@@ -138,10 +138,20 @@
     </v-card-text>
   </v-card>
 
+        <div style="text-align:center; display: inline-block;">
+          <vue-recaptcha
+            ref="visibleRecaptcha"
+            @verify="onVerify"
+            @expired="onExpired"
+            size="visible"
+            sitekey="6Lf6QhQhAAAAAOX_N_GsoV-x39Y5T2QJQ09dyMwu">
+          </vue-recaptcha>
+        </div>
+
         <div style="text-align: center">
           <v-btn
             :loading="isLoading"
-            :disabled="isLoading"
+            :disabled="isLoading || !recaptcha"
             color="blue-grey"
             class="ma-2 white--text"
             @click="submit"
@@ -157,7 +167,7 @@
       </v-col>
       <v-snackbar
       v-model="snackBar"
-      :timeout="4000"
+      :timeout="7000"
     >
       {{ text }}
     </v-snackbar>
@@ -166,6 +176,7 @@
 </template>
 
 <script>
+import VueRecaptcha from 'vue-recaptcha';
 const axios = require('../axios')
   export default {
     name: 'HelloWorld',
@@ -180,10 +191,30 @@ const axios = require('../axios')
     selected: [],
     extString: "",
     snackBar: false,
+    recaptcha: false,
     text: ""
     }),
-
+       components: {
+    VueRecaptcha
+  },
     methods: {
+   onSubmit: function () {
+      this.$refs.visibleRecaptcha.execute()
+    },
+    onVerify: function (response) {
+      console.log('Verify: ' + response)
+      this.recaptcha = true;
+    },
+    onExpired: function () {
+      console.log('Expired')
+      this.recaptcha = false;
+
+    },
+    resetRecaptcha () {
+      this.$refs.recaptcha.reset() // Direct call reset method
+      this.recaptcha = false;
+      
+    },
       onFileSelected(e) {
       this.selectedFile = e.target.files[0];
       if (this.selectedFile.size > 50485760) {
