@@ -204,7 +204,7 @@
             Details
           </p>
           <p style="font-weight: bold" v-for="item in summary" :key="item.name">
-          {{item.name}} : {{item.lines}} {{item.lines > 1 ? 'lines': 'line'}} of code. </p>
+          {{item.name}}({{item.files}}) : {{item.lines}} {{item.lines > 1 ? 'lines': 'line'}} of code. </p>
         </v-card-text>
         <v-card-actions class="pt-0 justify-center">
           <v-btn
