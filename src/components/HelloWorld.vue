@@ -77,6 +77,11 @@
       label="JAVASCRIPT"
       value=".js"
     ></v-checkbox>
+       <v-checkbox
+      v-model="selected"
+      label="GO"
+      value=".go"
+    ></v-checkbox>
           </v-col>
           <v-col
             cols="12"
@@ -93,7 +98,12 @@
       label="CSS"
       value=".css"
     ></v-checkbox>
-                   <v-checkbox
+    <v-checkbox
+      v-model="selected"
+      label="SCSS"
+      value=".scss"
+    ></v-checkbox>
+      <v-checkbox
       v-model="selected"
       label="VUE"
       value=".vue"
@@ -103,10 +113,7 @@
       label="TEXT"
       value=".txt"
     ></v-checkbox>
-          </v-col>
-         
-
-          
+          </v-col>          
           <v-col
             cols="12"
             sm="4"
@@ -160,10 +167,67 @@
             <v-icon right dark> mdi-cloud-upload </v-icon>
           </v-btn>
         </div>
-        
-        <div v-if="done" style="text-align: center">
-          <h2 style="font-style: italics">You have ({{ count }}) lines of code in this project</h2>
-        </div>
+
+         <v-card v-if="done"
+    class="mx-auto"
+    max-width="344"
+  >
+    <v-card-text>
+      <div>Total Lines</div>
+      <p class="text-h5 text--primary">
+        {{ count }}
+      </p>
+      <p>Lines of code</p>
+      <div class="text--primary">
+        Total lines of code in your project<br>
+        based on the extensions you specified.
+      </div>
+    </v-card-text>
+    <v-card-actions class="justify-center">
+      <v-btn
+        text
+        color="primary"
+        @click="reveal = true"
+      >
+        More Info
+      </v-btn>
+    </v-card-actions>
+
+    <v-expand-transition>
+      <v-card
+        v-if="reveal"
+        class="transition-fast-in-fast-out v-card--reveal"
+        style="height: auto;"
+      >
+        <v-card-text class="pb-0">
+          <p class="text-h5 text--primary">
+            Details
+          </p>
+          <p style="font-weight: bold" v-for="item in summary" :key="item.name">
+          {{item.name}} : {{item.lines}} {{item.lines > 1 ? 'lines': 'line'}} of code. </p>
+        </v-card-text>
+        <v-card-actions class="pt-0 justify-center">
+          <v-btn
+            text
+            color="primary"
+            @click="reveal = false"
+          >
+            Close
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-expand-transition>
+  </v-card>
+        <br />
+        <!-- <div style="text-align: center">
+        <v-card elevation="2" class="mx-auto"
+    max-width="344">
+          <div v-for="item in summary" :key="item.name">
+
+          </div>
+          <h2 style="font-style: italics">Project has ({{ count }}) lines of code.</h2>
+          </v-card>
+        </div> -->
       </v-col>
       <v-snackbar
       v-model="snackBar"
@@ -192,6 +256,8 @@ const axios = require('../axios')
     extString: "",
     snackBar: false,
     recaptcha: false,
+    summary: [],
+    reveal: false,
     text: ""
     }),
        components: {
@@ -208,7 +274,6 @@ const axios = require('../axios')
     onExpired: function () {
       console.log('Expired')
       this.recaptcha = false;
-
     },
     resetRecaptcha () {
       this.$refs.recaptcha.reset() // Direct call reset method
@@ -216,6 +281,7 @@ const axios = require('../axios')
       
     },
       onFileSelected(e) {
+        this.uploadProgress = 0
       this.selectedFile = e.target.files[0];
       if (this.selectedFile.size > 50485760) {
           this.text = "File can't be larger than 50MB"
@@ -248,12 +314,14 @@ const axios = require('../axios')
                 );
               }.bind(this),
             });
-
+            console.log(response.data)
             this.count = response.data.codeLines
+            this.summary = response.data.summary
             this.done = true;
             this.isLoading = false;
             this.selectedFile = null
             this.extString = ""
+            this.recaptcha = false
           } catch (e) {
            console.log(e)
             this.done = false
@@ -281,4 +349,11 @@ input[type=file]:focus {
   background-color: #ffd969;
   border-color: #000;
 }
+.v-card--reveal {
+  bottom: 0;
+  opacity: 1 !important;
+  position: absolute;
+  width: 100%;
+}
+
 </style>
