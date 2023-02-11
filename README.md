@@ -20,8 +20,8 @@ npm run build
 npm run lint
 ```
 
-### Demo
-https://app.edufyservices.com
+### Live App
+https://projectanalysis.xyz
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
