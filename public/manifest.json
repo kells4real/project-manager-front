@@ -1,0 +1,71 @@
+{
+  "icons": [{
+    "src": "./img/android-chrome-192x192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  },
+    {
+      "src": "./img/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/apple-touch-icon-60x60.png",
+      "sizes": "60x60",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/apple-touch-icon-76x76.png",
+      "sizes": "76x76",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/apple-touch-icon-120x120.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/apple-touch-icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/apple-touch-icon-180x180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "./img/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "name": "Edufy Project App",
+  "short_name": "Project App",
+  "description": "Edufy Project Code Tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#1976d2",
+  "gcm_sender_id": "103953800507"
+}
