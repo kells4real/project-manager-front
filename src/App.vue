@@ -57,15 +57,16 @@
       </v-card-text>
 
       <v-card-text class="white--text pt-0">
-       A simple web app that helps developers and software engineers access how much lines of code they've written in a project.
+      <p> A simple web app that helps developers and software engineers analyse how many lines of code they've written in a project, how many specific file types in your project according to your preference above. </p>
+       It gives a detailed overview of your project and how much work has gone into it.
        The program just goes through every extension according to your description and tells you how many lines of code you have
-        in your project directory.
+        in your project directory. The application does not keep your project, it is deleted after analysis. 
       </v-card-text>
 
       <v-divider></v-divider>
 
       <v-card-text class="white--text">
-        {{ new Date().getFullYear() }} — Powered by <a href="https://edufyservices.com" target="_blank"><strong style="color: #dedee0">Edufy Services</strong></a>
+        {{ new Date().getFullYear() }} — Powered by <a href="https://edufyschool.com" target="_blank"><strong style="color: #dedee0">Edufy Services</strong></a>
       </v-card-text>
     </v-card>
   </v-footer>
@@ -82,7 +83,7 @@ export default {
 
   data: () => ({
           icons: [
-         {icon: 'mdi-facebook', link: ''},
+         {icon: 'mdi-facebook', link: 'https://facebook.com/sajere'},
           {icon: 'mdi-twitter', link: 'https://twitter.com/kells4real'},
           {icon: 'mdi-linkedin', link: 'https://www.linkedin.com/in/kells4real/'},
           {icon: 'mdi-instagram', link: 'https://instagram.com/kells4real'}

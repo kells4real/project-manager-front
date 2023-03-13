@@ -1,7 +1,7 @@
 var axios = require('axios');
 
 var axiosInstance = axios.create({
-  baseURL: 'https://divine.edufyservices.com'
+  baseURL: 'https://kells19.pythonanywhere.com/'
   // baseURL: 'http://localhost:8000'
   /* other custom settings */
 });
