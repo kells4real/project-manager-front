@@ -7,7 +7,7 @@
     >
       <div class="d-flex align-center">
         <v-img
-          alt="Logo"
+          alt="Vuetify Logo"
           class="shrink mr-2"
           contain
           :src="logo"
@@ -57,7 +57,7 @@
       </v-card-text>
 
       <v-card-text class="white--text pt-0">
-      <p> A simple web app that helps developers and software engineers analyse how many lines of code they've written in a project (and is smart enough not to count empty lines), how many specific file types in your project according to your preference above. </p>
+      <p> A simple web app that helps developers and software engineers analyse how many lines of code they've written in a project, how many specific file types in your project according to your preference above. </p>
        It gives a detailed overview of your project and how much work has gone into it.
        The program just goes through every extension according to your description and tells you how many lines of code you have
         in your project directory. The application does not keep your project, it is deleted after analysis. 
