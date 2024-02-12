@@ -66,7 +66,7 @@
       <v-divider></v-divider>
 
       <v-card-text class="white--text">
-        {{ new Date().getFullYear() }} — Powered by <a href="https://edufyschool.com" target="_blank"><strong style="color: #dedee0">Edufy Services</strong></a>
+        {{ new Date().getFullYear() }} — Powered by <a href="https://edufy.com.ng" target="_blank"><strong style="color: #dedee0">Edufy Computer Services</strong></a>
       </v-card-text>
     </v-card>
   </v-footer>
