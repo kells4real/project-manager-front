@@ -21,7 +21,7 @@ npm run lint
 ```
 
 ### Live App
-https://projectanalysis.xyz
+https://project.edufy.com.ng
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
