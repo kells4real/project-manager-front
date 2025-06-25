@@ -21,7 +21,7 @@ npm run lint
 ```
 
 ### Live App
-https://project.edufy.com.ng
+https://codelyzer.vercel.app
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
