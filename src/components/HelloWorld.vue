@@ -5,8 +5,9 @@
         <!-- Drag and drop zone -->
         <v-card
           outlined
+          :class="{'drop-zone-dark': $vuetify.theme.dark, 'drop-zone-light': !$vuetify.theme.dark}"
           class="drop-zone text-center"
-          :class="{ 'drop-zone-active': isDragging }"
+          :style="{'background-color': $vuetify.theme.dark ? '#1E1E1E' : '#FAFAFA'}"
           @dragover.prevent="isDragging = true"
           @dragleave="isDragging = false"
           @drop.prevent="handleDrop"
@@ -377,5 +378,21 @@ export default {
 }
 .v-data-table >>> tbody tr:hover {
   background-color: #f5f5f5 !important;
+}
+.drop-zone-light {
+  border: 2px dashed #e0e0e0;
+  background-color: #FAFAFA;
+}
+
+.drop-zone-dark {
+  border: 2px dashed #424242;
+  background-color: #1E1E1E;
+}
+
+/* Force dark mode colors in production */
+.theme--dark .drop-zone {
+  background-color: #1E1E1E !important;
+  border-color: #424242 !important;
+  color: #FFFFFF !important;
 }
 </style>
