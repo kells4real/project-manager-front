@@ -151,7 +151,7 @@
             @verify="onVerify"
             @expired="onExpired"
             size="visible"
-            sitekey="6Lf6QhQhAAAAAOX_N_GsoV-x39Y5T2QJQ09dyMwu">
+            sitekey="6Ld4rG0rAAAAAHP0ZPTagS0NCTch_SvfUfF_bDaH">
           </vue-recaptcha>
         </div>
 
