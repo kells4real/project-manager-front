@@ -146,7 +146,7 @@
               <div class="text-h3 primary--text font-weight-bold">{{ count.toLocaleString() }}</div>
               <div class="text-subtitle-1 text--secondary">Total lines of code</div>
               <v-chip small color="primary" text-color="white" class="mt-3">
-                {{ selectedCount }} file type{{ selected.length > 1 ? 's' : '' }} analyzed
+                {{ selectedCount }} file type{{ selectedCount > 1 ? 's' : '' }} analyzed
               </v-chip>
             </v-card-text>
             
