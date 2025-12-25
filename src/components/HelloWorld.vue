@@ -25,7 +25,7 @@
                   Drag & Drop your project folder or zip file
                 </h3>
                 <p class="text-caption text--secondary">
-                  Supports folders, .zip, .7zip (Max 50MB)
+                  Supports folders, .zip, .7zip (Max 1GB)
                 </p>
                 <div class="d-flex justify-center mt-4">
                   <v-btn
@@ -56,9 +56,9 @@
                   {{ selectedFile ? selectedFile.name : 'Folder with ' + selectedFolder.length + ' files' }}
                 </h3>
                 <p class="text-caption text--secondary">
-                  <span v-if="selectedFile">{{ formatFileSize(selectedFile.size) }}</span>
-                  <span v-else>{{ selectedFolder.length }} items selected</span>
-                </p>
+                <span v-if="!selectedFile">Supports folders, .zip, .tar.gz (Max 1GB)</span>
+                <span v-else>{{ formatFileSize(selectedFile.size) }}</span>
+              </p>
                 <v-btn
                   small
                   color="error"
@@ -428,6 +428,26 @@
             </v-btn>
           </template>
         </v-snackbar>
+
+        <v-snackbar v-model="showWarning" :timeout="5000" color="warning" top>
+  <v-icon left>mdi-alert</v-icon>
+  {{ warningMessage }}
+  <template v-slot:action="{ attrs }">
+    <v-btn icon v-bind="attrs" @click="showWarning = false">
+      <v-icon>mdi-close</v-icon>
+    </v-btn>
+  </template>
+</v-snackbar>
+
+        <!-- Success Snackbar -->
+        <v-snackbar v-model="showSuccess" :timeout="5000" color="success" top>
+          {{ successMessage }}
+          <template v-slot:action="{ attrs }">
+            <v-btn icon v-bind="attrs" @click="showSuccess = false">
+              <v-icon>mdi-close</v-icon>
+            </v-btn>
+          </template>
+        </v-snackbar>
       </v-col>
     </v-row>
   </v-container>
@@ -436,6 +456,11 @@
 <script>
 import JSZip from 'jszip';
 import { createCodeAnalyzerWorker } from '@/utils/worker-utils';
+
+// Constants for file size limits
+const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024; // 1GB
+const WARNING_SIZE = 100 * 1024 * 1024; // 100MB warning threshold
+const LARGE_SIZE = 500 * 1024 * 1024; // 500MB large file threshold
 
 export default {
   name: 'CodeAnalyzer',
@@ -452,8 +477,8 @@ export default {
       currentFile: '',
       processedFiles: 0,
       totalFiles: 0,
-      processingTime: 0, // ADDED THIS
-      startTime: null,   // ADDED THIS
+      processingTime: 0,
+      startTime: null,
       
       // Settings
       selectedTypes: [],
@@ -474,11 +499,13 @@ export default {
       errorMessage: '',
       showSuccess: false,
       successMessage: '',
+      showWarning: false, // ADDED for large file warnings
+      warningMessage: '',
       
       // Worker
       worker: null,
       
-      // Table headers - ADDED THIS
+      // Table headers
       typeHeaders: [
         { text: 'File Type', value: 'type', align: 'left' },
         { text: 'Files', value: 'count', align: 'center' },
@@ -516,6 +543,15 @@ export default {
   computed: {
     hasSelectedFile() {
       return this.selectedFile || (this.selectedFolder && this.selectedFolder.length > 0);
+    },
+    
+    selectedFileSize() {
+      if (this.selectedFile) {
+        return this.selectedFile.size;
+      } else if (this.selectedFolder) {
+        return this.selectedFolder.reduce((sum, file) => sum + file.size, 0);
+      }
+      return 0;
     },
     
     statistics() {
@@ -564,7 +600,7 @@ export default {
   },
   
   methods: {
-    // File handling
+    // File handling with 1GB limit
     browseFiles() {
       this.$refs.file.click();
     },
@@ -576,14 +612,18 @@ export default {
     onFileSelected(e) {
       const file = e.target.files[0];
       if (file) {
-        if (file.size > 50 * 1024 * 1024) {
-          this.showErrorMsg("File size must be less than 50MB");
+        // 1GB limit
+        if (file.size > MAX_FILE_SIZE) {
+          this.showErrorMsg(`File size must be less than ${this.formatFileSize(MAX_FILE_SIZE)}`);
           return;
         }
         this.selectedFile = file;
         this.selectedFolder = null;
         this.analysisComplete = false;
         this.resetFileInputs();
+        
+        // Show warning for large files
+        this.checkAndShowFileSizeWarning(file.size);
       }
     },
     
@@ -591,46 +631,75 @@ export default {
       const files = Array.from(e.target.files || []);
       if (files.length > 0) {
         const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-        if (totalSize > 50 * 1024 * 1024) {
-          this.showErrorMsg("Total folder size must be less than 50MB");
+        // 1GB limit
+        if (totalSize > MAX_FILE_SIZE) {
+          this.showErrorMsg(`Total folder size must be less than ${this.formatFileSize(MAX_FILE_SIZE)}`);
           return;
         }
         this.selectedFolder = files;
         this.selectedFile = null;
         this.analysisComplete = false;
         this.resetFileInputs();
+        
+        // Show warning for large files
+        this.checkAndShowFileSizeWarning(totalSize);
       }
     },
     
-    handleDrop(e) {
-      e.preventDefault();
-      this.isDragging = false;
-      const items = e.dataTransfer.items;
-      console.log('Dropped items:', items);
-      const files = Array.from(e.dataTransfer.files || []);
-      
-      if (files.length > 0) {
-        const zipFile = files.find(f => 
-          f.name.match(/\.(zip|7z|tar\.gz)$/i)
-        );
-        
-        if (zipFile && files.length === 1) {
-          if (zipFile.size > 50 * 1024 * 1024) {
-            this.showErrorMsg("File size must be less than 50MB");
-            return;
-          }
-          this.selectedFile = zipFile;
-          this.selectedFolder = null;
-        } else {
-          const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-          if (totalSize > 50 * 1024 * 1024) {
-            this.showErrorMsg("Total size must be less than 50MB");
-            return;
-          }
-          this.selectedFolder = files;
-          this.selectedFile = null;
-        }
-        this.analysisComplete = false;
+handleDrop(e) {
+  e.preventDefault();
+  this.isDragging = false;
+  
+  const items = Array.from(e.dataTransfer.items);
+  console.log('Dropped items:', items);
+  
+  const files = [];
+  
+  // Extract files from DataTransferItemList
+  for (const item of items) {
+    if (item.kind === 'file') {
+      const file = item.getAsFile();
+      if (file) {
+        files.push(file);
+      }
+    }
+  }
+  
+  console.log('Extracted files:', files);
+  
+  if (files.length > 0) {
+    const zipFile = files.find(f => 
+      f.name.match(/\.(zip|7z|tar\.gz)$/i)
+    );
+    
+    if (zipFile && files.length === 1) {
+      if (zipFile.size > MAX_FILE_SIZE) {
+        this.showErrorMsg(`File size must be less than ${this.formatFileSize(MAX_FILE_SIZE)}`);
+        return;
+      }
+      this.selectedFile = zipFile;
+      this.selectedFolder = null;
+      this.checkAndShowFileSizeWarning(zipFile.size);
+    } else {
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      if (totalSize > MAX_FILE_SIZE) {
+        this.showErrorMsg(`Total size must be less than ${this.formatFileSize(MAX_FILE_SIZE)}`);
+        return;
+      }
+      this.selectedFolder = files;
+      this.selectedFile = null;
+      this.checkAndShowFileSizeWarning(totalSize);
+    }
+    this.analysisComplete = false;
+  }
+},
+    
+    // Check and show file size warning
+    checkAndShowFileSizeWarning(fileSize) {
+      if (fileSize > LARGE_SIZE) {
+        this.showWarningMsg(`Large file (${this.formatFileSize(fileSize)}) detected. Analysis may take several minutes.`);
+      } else if (fileSize > WARNING_SIZE) {
+        this.showWarningMsg(`Medium file (${this.formatFileSize(fileSize)}) detected. Analysis may take a moment.`);
       }
     },
     
@@ -655,111 +724,230 @@ export default {
       this.selectedTypes = [];
     },
     
-    // Main analysis method
-    async analyzeCode() {
-      if (!this.hasSelectedFile || this.selectedTypes.length === 0) {
-        this.showErrorMsg("Please select files and file types first");
-        return;
-      }
-      
-      // Reset state
-      this.isProcessing = true;
-      this.progress = 0;
-      this.currentFile = '';
-      this.processedFiles = 0;
-      this.totalFiles = 0;
-      this.analysisComplete = false;
-      this.totalLines = 0;
-      this.totalFilesProcessed = 0;
-      this.fileTypeSummary = [];
-      this.largestFiles = [];
-      this.allFiles = [];
-      this.processingTime = 0; // Reset processing time
-      this.startTime = Date.now(); // Record start time
-      
-      try {
-        // Step 1: Extract/read files in main thread
-        this.currentFile = 'Preparing files...';
-        const files = await this.extractAndReadFiles();
-        
-        if (files.length === 0) {
-          throw new Error('No valid files found to analyze');
-        }
-        
-        // Step 2: Create worker and analyze
-        this.createWorker();
-        
-        const workerData = {
-          files: files,
-          selectedTypes: this.selectedTypes,
-          options: {
-            countEmptyLines: this.countEmptyLines,
-            ignoreComments: this.ignoreComments
-          }
-        };
-        
-        this.worker.postMessage({
-          type: 'analyze',
-          data: workerData
-        });
-        
-      } catch (error) {
-        console.error('Error in analysis:', error);
-        this.showErrorMsg('Failed to analyze files: ' + error.message);
-        this.isProcessing = false;
-        this.cleanupWorker();
-      }
-    },
+    // Main analysis method with large file support
+async analyzeCode() {
+  if (!this.hasSelectedFile || this.selectedTypes.length === 0) {
+    this.showErrorMsg("Please select files and file types first");
+    return;
+  }
+  
+  // Debug logging
+  console.log('Starting analysis with:');
+  console.log('Selected file:', this.selectedFile);
+  console.log('Selected folder items:', this.selectedFolder ? this.selectedFolder.length : 0);
+  console.log('Selected types:', this.selectedTypes);
+  
+  // Reset state
+  this.isProcessing = true;
+  this.progress = 0;
+  this.currentFile = '';
+  this.processedFiles = 0;
+  this.totalFiles = 0;
+  this.analysisComplete = false;
+  this.totalLines = 0;
+  this.totalFilesProcessed = 0;
+  this.fileTypeSummary = [];
+  this.largestFiles = [];
+  this.allFiles = [];
+  this.processingTime = 0;
+  this.startTime = Date.now();
+  
+  try {
+    // Show initial message
+    if (this.selectedFileSize > 100 * 1024 * 1024) {
+      this.currentFile = 'Preparing large file, please wait...';
+    } else {
+      this.currentFile = 'Preparing files...';
+    }
     
-    // Extract and read files
-    async extractAndReadFiles() {
-      const files = [];
-      
-      if (this.selectedFile) {
-        if (this.selectedFile.name.match(/\.(zip|7z|tar\.gz)$/i)) {
-          await this.extractZipFile(this.selectedFile, files);
-        } else {
-          // Single non-zip file
-          const content = await this.readFileAsText(this.selectedFile);
-          files.push({
-            name: this.selectedFile.name,
-            content: content,
-            size: this.selectedFile.size
-          });
-        }
-      } else if (this.selectedFolder) {
-        await this.processFolder(this.selectedFolder, files);
-      }
-      
-      this.totalFiles = files.length;
-      return files;
-    },
+    const files = await this.extractAndReadFiles();
     
-    // Fixed: Extract zip file
+    console.log(`Files prepared for worker: ${files.length}`);
+    
+    if (files.length === 0) {
+      throw new Error('No valid files found to analyze. Please ensure you have selected source code files (.js, .py, .java, etc.)');
+    }
+    
+    // Check if any files match selected types
+    const hasMatchingFiles = files.some(file => {
+      const extension = this.getFileExtension(file.name);
+      return this.selectedTypes.some(type => 
+        extension === type || file.name.includes(type)
+      );
+    });
+    
+    if (!hasMatchingFiles) {
+      throw new Error(`No files match the selected file types (${this.selectedTypes.join(', ')}). Please select different file types or files with matching extensions.`);
+    }
+    
+    // Create worker and analyze
+    this.createWorker();
+    
+    const workerData = {
+      files: files,
+      selectedTypes: this.selectedTypes,
+      options: {
+        countEmptyLines: this.countEmptyLines,
+        ignoreComments: this.ignoreComments
+      }
+    };
+    
+    console.log('Sending data to worker...');
+    this.worker.postMessage({
+      type: 'analyze',
+      data: workerData
+    });
+    
+  } catch (error) {
+    console.error('Error in analysis:', error);
+    this.showErrorMsg('Failed to analyze files: ' + error.message);
+    this.isProcessing = false;
+    this.cleanupWorker();
+    this.cleanupMemory();
+  }
+},
+
+// Add this method for true folder traversal
+async processFolderWithTraversal(folderItems, filesArray) {
+  // This only works with folder input, not drag & drop
+  const items = Array.from(folderItems);
+  
+  // Check if we have directory entry (webkitGetAsEntry)
+  const entries = [];
+  
+  for (const item of items) {
+    if (item.webkitGetAsEntry) {
+      const entry = item.webkitGetAsEntry();
+      if (entry) {
+        entries.push(entry);
+      }
+    }
+  }
+  
+  if (entries.length > 0) {
+    // We have directory entries, traverse them
+    for (const entry of entries) {
+      await this.traverseDirectoryEntry(entry, '', filesArray);
+    }
+  } else {
+    // Fallback to regular file processing
+    await this.processFolder(items, filesArray);
+  }
+  
+  return filesArray;
+},
+
+// Helper to traverse directory entries
+async traverseDirectoryEntry(entry, path, filesArray) {
+  return new Promise((resolve, reject) => {
+    if (entry.isFile) {
+      entry.file(file => {
+        this.readAndAddFile(file, path, filesArray)
+          .then(resolve)
+          .catch(reject);
+      }, reject);
+    } else if (entry.isDirectory) {
+      const dirReader = entry.createReader();
+      dirReader.readEntries(async (entries) => {
+        for (const subEntry of entries) {
+          await this.traverseDirectoryEntry(subEntry, path + entry.name + '/', filesArray);
+        }
+        resolve();
+      }, reject);
+    }
+  });
+},
+
+async readAndAddFile(file, path, filesArray) {
+  try {
+    const content = await this.readFileAsText(file);
+    
+    // Skip binary files
+    if (content.includes('\u0000')) {
+      return;
+    }
+    
+    filesArray.push({
+      name: path + file.name,
+      content: content,
+      size: file.size,
+      type: file.type
+    });
+    
+    console.log(`Added: ${path + file.name}`);
+  } catch (e) {
+    console.warn(`Failed to read ${file.name}:`, e.message);
+  }
+},
+
+async extractAndReadFiles() {
+  const files = [];
+  
+  if (this.selectedFile) {
+    if (this.selectedFile.name.match(/\.(zip|7z|tar\.gz)$/i)) {
+      await this.extractZipFile(this.selectedFile, files);
+    } else {
+      const content = await this.readFileAsText(this.selectedFile);
+      files.push({
+        name: this.selectedFile.name,
+        content: content,
+        size: this.selectedFile.size,
+        type: this.selectedFile.type
+      });
+    }
+  } else if (this.selectedFolder && this.selectedFolder.length > 0) {
+    // Use the new traversal method
+    await this.processFolderWithTraversal(this.selectedFolder, files);
+  }
+  
+  console.log(`Total files for analysis: ${files.length}`);
+  
+  if (files.length === 0) {
+    throw new Error('No readable files found. Please select source code files (.js, .py, .java, etc.)');
+  }
+  
+  this.totalFiles = files.length;
+  return files;
+},
+    // Enhanced zip extraction with better progress tracking
     async extractZipFile(zipFile, filesArray) {
       try {
         const zip = new JSZip();
+        this.currentFile = 'Loading zip file...';
         const zipData = await zip.loadAsync(zipFile);
         
         const entries = Object.keys(zipData.files);
         let extractedCount = 0;
+        let totalSizeExtracted = 0;
+        const totalSize = zipFile.size;
         
-        for (const filename of entries) {
+        // For large files, update more frequently
+        const updateFrequency = totalSize > 100 * 1024 * 1024 ? 1 : 5;
+        
+        for (let i = 0; i < entries.length; i++) {
+          const filename = entries[i];
           const zipEntry = zipData.files[filename];
           
           if (!zipEntry.dir) {
             try {
               const content = await zipEntry.async('text');
+              const fileSize = content.length;
               filesArray.push({
                 name: filename,
                 content: content,
-                size: content.length
+                size: fileSize
               });
               extractedCount++;
+              totalSizeExtracted += fileSize;
               
-              // Update progress
-              if (extractedCount % 10 === 0) {
-                this.currentFile = 'Extracted ' + extractedCount + ' files...';
+              // Show progress for large files
+              if (i % updateFrequency === 0 || totalSize > 100 * 1024 * 1024) {
+                const sizeProgress = Math.round((totalSizeExtracted / totalSize) * 100);
+                const fileProgress = Math.round((i / entries.length) * 100);
+                const progress = Math.round((sizeProgress + fileProgress) / 2);
+                
+                this.currentFile = `Extracting: ${progress}% (${extractedCount} files)`;
+                this.progress = progress;
                 await this.$nextTick();
               }
             } catch (e) {
@@ -769,46 +957,81 @@ export default {
           }
         }
         
-        this.currentFile = 'Extracted ' + extractedCount + ' files';
+        this.currentFile = `Extracted ${extractedCount} files`;
+        this.progress = 50; // Extraction complete
         
       } catch (error) {
         throw new Error('Failed to extract zip file: ' + error.message);
       }
     },
     
-    // Process folder
-    async processFolder(folderItems, filesArray) {
-      const textFiles = Array.from(folderItems).filter(item => 
-        !item.type || 
-        item.type.startsWith('text/') || 
-        /\.(js|ts|py|java|c|cpp|cs|html|css|scss|vue|php|rb|go|json|yaml|xml|md|txt|sh)$/i.test(item.name)
-      );
-      
-      let processedCount = 0;
-      
-      for (const file of textFiles) {
-        try {
-          const content = await this.readFileAsText(file);
-          filesArray.push({
-            name: file.webkitRelativePath || file.name,
-            content: content,
-            size: file.size
-          });
-          processedCount++;
-          
-          // Update progress
-          if (processedCount % 10 === 0) {
-            this.currentFile = 'Read ' + processedCount + ' files...';
-            await this.$nextTick();
-          }
-        } catch (e) {
-          console.log('Could not read file:', file.name);
-        }
-      }
-      
-      this.currentFile = 'Processed ' + processedCount + ' files';
-    },
+async processFolder(folderItems, filesArray) {
+  // Convert to array and ensure we have File objects
+  const items = Array.from(folderItems).filter(item => item instanceof File);
+  
+  console.log(`Processing folder with ${items.length} File objects`);
+  
+  if (items.length === 0) {
+    console.error('No File objects found in folder selection');
+    throw new Error('No valid files found. Please ensure you are selecting actual files, not directories.');
+  }
+  
+  let processedCount = 0;
+  
+  for (const file of items) {
+    console.log(`Processing file: ${file.name}, Type: ${file.type}, Size: ${file.size}`);
     
+    // Skip directories (they usually have size 0 and type "")
+    if (file.size === 0 && file.type === "" && !file.name.includes('.')) {
+      console.log(`Skipping directory: ${file.name}`);
+      continue;
+    }
+    
+    try {
+      const content = await this.readFileAsText(file);
+      
+      // Check if content is readable text (not binary)
+      if (content && content.trim().length > 0) {
+        // Skip if it looks like binary (contains null characters)
+        if (content.includes('\u0000')) {
+          console.log(`Skipping binary file: ${file.name}`);
+          continue;
+        }
+        
+        filesArray.push({
+          name: file.webkitRelativePath || file.name,
+          content: content,
+          size: file.size,
+          type: file.type
+        });
+        processedCount++;
+        
+        console.log(`Successfully added: ${file.name}`);
+        
+        // Update progress
+        if (processedCount % 5 === 0) {
+          this.currentFile = `Read ${processedCount} files...`;
+          await this.$nextTick();
+        }
+      } else {
+        console.log(`Skipping empty file: ${file.name}`);
+      }
+    } catch (e) {
+      console.warn(`Failed to read ${file.name}:`, e.message);
+    }
+  }
+  
+  console.log(`Total files processed: ${processedCount}/${items.length}`);
+  
+  if (processedCount === 0) {
+    throw new Error(`Could not read any text files. The selected items may be directories or binary files.`);
+  }
+  
+  this.currentFile = `Processed ${processedCount} files`;
+  this.progress = 50;
+  
+  return filesArray;
+},
     // Read file as text
     readFileAsText(file) {
       return new Promise((resolve, reject) => {
@@ -828,7 +1051,8 @@ export default {
         
         switch (type) {
           case 'progress':
-            this.progress = progress;
+            // Adjust progress to account for extraction phase (already at 50%)
+            this.progress = 50 + (progress / 2);
             this.currentFile = currentFile || '';
             if (processedFiles !== undefined) this.processedFiles = processedFiles;
             if (totalFiles !== undefined) this.totalFiles = totalFiles;
@@ -843,7 +1067,7 @@ export default {
             this.processResults(results);
             this.analysisComplete = true;
             this.isProcessing = false;
-            this.showSuccessMsg('Analysis completed successfully!');
+            this.showSuccessMsg(`Analysis completed in ${this.processingTime} seconds!`);
             this.cleanupWorker();
             break;
             
@@ -851,6 +1075,7 @@ export default {
             this.showErrorMsg(error || 'Worker encountered an error');
             this.isProcessing = false;
             this.cleanupWorker();
+            this.cleanupMemory();
             break;
         }
       };
@@ -860,6 +1085,7 @@ export default {
         this.showErrorMsg('Worker failed to execute');
         this.isProcessing = false;
         this.cleanupWorker();
+        this.cleanupMemory();
       };
     },
     
@@ -868,6 +1094,19 @@ export default {
       if (this.worker) {
         this.worker.terminate();
         this.worker = null;
+      }
+    },
+    
+    // Memory cleanup for large files
+    cleanupMemory() {
+      // Clear large arrays to free memory
+      this.allFiles = [];
+      this.largestFiles = [];
+      this.fileTypeSummary = [];
+      
+      // Force garbage collection if available (Chrome flag: --js-flags="--expose-gc")
+      if (typeof window.gc === 'function') {
+        window.gc();
       }
     },
     
@@ -894,6 +1133,7 @@ export default {
         this.cleanupWorker();
         this.isProcessing = false;
         this.showErrorMsg('Analysis cancelled');
+        this.cleanupMemory();
       }
     },
     
@@ -901,6 +1141,9 @@ export default {
     showErrorMsg(message) {
       this.errorMessage = message;
       this.showError = true;
+      setTimeout(() => {
+        this.showError = false;
+      }, 5000);
     },
     
     showSuccessMsg(message) {
@@ -908,7 +1151,15 @@ export default {
       this.showSuccess = true;
       setTimeout(() => {
         this.showSuccess = false;
-      }, 3000);
+      }, 5000);
+    },
+    
+    showWarningMsg(message) {
+      this.warningMessage = message;
+      this.showWarning = true;
+      setTimeout(() => {
+        this.showWarning = false;
+      }, 5000);
     },
     
     // Utility methods
@@ -941,7 +1192,6 @@ export default {
       return extension.substring(1, 3).toUpperCase();
     },
     
-    // Add missing methods from template
     getRankColor(index) {
       if (index === 0) return 'gold darken-1';
       if (index === 1) return 'grey darken-1';
@@ -966,7 +1216,7 @@ export default {
       return filename.substring(lastDot).toLowerCase();
     },
     
-    // Export methods - ADDED exportCSV
+    // Export methods
     exportResults() {
       const results = {
         timestamp: new Date().toISOString(),
@@ -974,7 +1224,8 @@ export default {
           totalLines: this.totalLines,
           totalFiles: this.totalFilesProcessed,
           fileTypes: this.fileTypeSummary.length,
-          processingTime: this.processingTime
+          processingTime: this.processingTime,
+          totalSize: this.selectedFileSize
         },
         byFileType: this.fileTypeSummary,
         largestFiles: this.largestFiles,
@@ -989,7 +1240,6 @@ export default {
       this.downloadFile(dataStr, 'code-analysis.json', 'application/json');
     },
     
-    // ADDED THIS METHOD
     exportCSV() {
       let csv = 'File Type,Files,Lines,Percentage\n';
       
@@ -1022,6 +1272,7 @@ export default {
     
     startNewAnalysis() {
       this.cleanupWorker();
+      this.cleanupMemory();
       this.selectedFile = null;
       this.selectedFolder = null;
       this.selectedTypes = [];
@@ -1037,6 +1288,7 @@ export default {
     
     beforeDestroy() {
       this.cleanupWorker();
+      this.cleanupMemory();
     }
   }
 };
